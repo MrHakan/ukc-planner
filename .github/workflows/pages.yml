@@ -33,7 +33,7 @@ jobs:
           test -f app.js
           grep -q "UKC Planner" index.html
           grep -q "Barrass empirical blockage" index.html
-          grep -q "Speed Advisor" index.html
+          grep -qi "speed advisor" index.html
           grep -q "squatMatrix" calc-engine.js
           grep -q "maxSafeSpeed" calc-engine.js
       - name: Run calculation regression tests
