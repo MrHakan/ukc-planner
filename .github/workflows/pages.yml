@@ -1,0 +1,59 @@
+name: Deploy UKC Planner to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check calc-engine.js
+          node --check app.js
+          node --check tests/calculation.mjs
+      - name: Validate static app
+        run: |
+          test -f index.html
+          test -f styles.css
+          test -f calc-engine.js
+          test -f app.js
+          grep -q "UKC Planner" index.html
+          grep -q "Barrass empirical blockage" index.html
+          grep -q "Speed Advisor" index.html
+          grep -q "squatMatrix" calc-engine.js
+          grep -q "maxSafeSpeed" calc-engine.js
+      - name: Run calculation regression tests
+        run: node tests/calculation.mjs
+
+  deploy:
+    needs: validate
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

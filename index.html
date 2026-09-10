@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0c2030">
+  <meta name="description" content="Dynamic UKC and squat planning calculator for training and passage-planning experiments.">
+  <title>UKC Planner</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">↕</div>
+      <div>
+        <h1>UKC Planner</h1>
+        <p>Dynamic Under Keel Clearance · Squat · Speed Window</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="saveScenarioBtn">Save Scenario</button>
+      <button id="resetBtn">Reset</button>
+      <button id="printBtn" class="primary">Print Report</button>
+    </div>
+  </header>
+
+  <div class="safety-banner">
+    <strong>Planning / training aid only.</strong>
+    Verify all values, formulas, hydrographic data, tide, CATZOC interpretation and company UKC policy against approved bridge procedures and publications before operational use.
+  </div>
+
+  <main class="layout">
+    <section class="panel inputs-panel">
+      <div class="panel-head">
+        <div><span class="eyebrow">INPUT DATA</span><h2>Vessel & Passage</h2></div>
+        <button id="sampleBtn" class="tiny">Load Example</button>
+      </div>
+
+      <div class="input-groups">
+        <fieldset>
+          <legend>Vessel particulars</legend>
+          <div class="grid-2">
+            <label>LBP <span>m</span><input data-field="lbp" type="number" step="0.1"></label>
+            <label>Beam <span>m</span><input data-field="beam" type="number" step="0.1"></label>
+            <label>Draft forward <span>m</span><input data-field="draftForward" type="number" step="0.01"></label>
+            <label>Draft aft <span>m</span><input data-field="draftAft" type="number" step="0.01"></label>
+            <label>Displacement <span>t</span><input data-field="displacement" type="number" step="1"></label>
+            <label>Cb override <span>optional</span><input data-field="cbOverride" type="number" step="0.001" min="0" max="1.2"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Waterway & motion</legend>
+          <div class="grid-2">
+            <label>Charted depth <span>m</span><input data-field="chartedDepth" type="number" step="0.01"></label>
+            <label>Tide height <span>m</span><input data-field="tideHeight" type="number" step="0.01"></label>
+            <label>Speed through water <span>kn</span><input data-field="speed" type="number" step="0.1"></label>
+            <label>Water density <span>t/m³</span><input data-field="waterDensity" type="number" step="0.001"></label>
+            <label>Channel width <span>m; blank = Barrass width</span><input data-field="channelWidth" type="number" step="0.1"></label>
+            <label>FWA <span>mm</span><input data-field="fwaMm" type="number" step="1"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Squat model</legend>
+          <label class="wide-label">Method
+            <select data-field="squatMethod">
+              <option value="barrass-blockage">Barrass empirical blockage</option>
+              <option value="simple-confined">Simple confined-water estimate</option>
+              <option value="simple-open">Simple open-water estimate</option>
+            </select>
+          </label>
+          <div class="formula-note" id="formulaNote"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Dynamic allowances</legend>
+          <div class="grid-2">
+            <label>Heel angle <span>deg</span><input data-field="heelAngle" type="number" step="0.1"></label>
+            <label>Heel allowance override <span>m</span><input data-field="heelAllowanceManual" type="number" step="0.01"></label>
+            <label>Wave allowance <span>m</span><input data-field="waveAllowance" type="number" step="0.01"></label>
+            <label>Manual draft correction <span>m</span><input data-field="manualDraftCorrection" type="number" step="0.01"></label>
+            <label>CATZOC
+              <select data-field="catzoc">
+                <option>A1</option><option>A2</option><option>B</option><option>C</option><option>D</option><option>U</option><option value="MANUAL">Manual</option>
+              </select>
+            </label>
+            <label>Extra survey allowance <span>m</span><input data-field="surveyAllowanceManual" type="number" step="0.01"></label>
+            <label>Other allowance <span>m</span><input data-field="otherAllowance" type="number" step="0.01"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Required UKC policy</legend>
+          <div class="grid-2">
+            <label>Minimum UKC <span>m</span><input data-field="requiredFixed" type="number" step="0.05"></label>
+            <label>Minimum UKC <span>% of adjusted draft</span><input data-field="requiredPercent" type="number" step="1"></label>
+            <label>Additional company margin <span>m</span><input data-field="additionalSafetyMargin" type="number" step="0.05"></label>
+          </div>
+          <p class="help">The planner uses the greater of the fixed requirement and the percentage-of-draft requirement, then adds the additional company margin.</p>
+        </fieldset>
+      </div>
+    </section>
+
+    <section class="panel result-panel">
+      <div class="panel-head">
+        <div><span class="eyebrow">CURRENT CONDITION</span><h2>Dynamic UKC</h2></div>
+        <div id="statusBadge" class="status-badge">—</div>
+      </div>
+
+      <div id="errors" class="errors hidden"></div>
+
+      <div class="hero-result">
+        <div>
+          <span>AVAILABLE DYNAMIC UKC</span>
+          <strong id="dynamicUKC">—</strong>
+          <small>m</small>
+        </div>
+        <div>
+          <span>MARGIN TO REQUIREMENT</span>
+          <strong id="margin">—</strong>
+          <small>m</small>
+        </div>
+      </div>
+
+      <div class="breakdown" id="breakdown"></div>
+
+      <div class="speed-advisor">
+        <div>
+          <span class="eyebrow">SPEED ADVISOR</span>
+          <h3>Maximum speed under current constraints</h3>
+        </div>
+        <div class="speed-value"><b id="safeSpeed">—</b><span>kn</span></div>
+        <p id="speedReason"></p>
+      </div>
+
+      <div class="method-card">
+        <div><span>Block coefficient Cb</span><b id="cbValue">—</b></div>
+        <div><span>Width of influence</span><b id="widthInfluence">—</b></div>
+        <div><span>Effective channel width</span><b id="effectiveWidth">—</b></div>
+        <div><span>Blockage factor</span><b id="blockage">—</b></div>
+      </div>
+    </section>
+
+    <section class="panel diagram-panel">
+      <div class="panel-head"><div><span class="eyebrow">VISUAL CLEARANCE</span><h2>Depth Stack</h2></div></div>
+      <div class="ship-diagram" id="shipDiagram">
+        <svg viewBox="0 0 800 460" role="img" aria-label="Dynamic UKC clearance diagram">
+          <defs>
+            <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#167ca4"/><stop offset="1" stop-color="#0d506f"/></linearGradient>
+          </defs>
+          <rect x="0" y="0" width="800" height="460" rx="18" fill="#f4f6f7"/>
+          <rect id="waterRect" x="0" y="88" width="800" height="292" fill="url(#sea)"/>
+          <path id="hull" d="M220 115 H575 L545 270 Q400 315 255 270 Z" fill="#252d34"/>
+          <rect x="325" y="60" width="150" height="80" rx="7" fill="#eef3f4" stroke="#252d34" stroke-width="4"/>
+          <rect x="352" y="76" width="28" height="24" fill="#65b8d4"/><rect x="390" y="76" width="28" height="24" fill="#65b8d4"/><rect x="428" y="76" width="28" height="24" fill="#65b8d4"/>
+          <rect id="seabedRect" x="0" y="380" width="800" height="80" fill="#8e7650"/>
+          <line id="waterline" x1="70" y1="88" x2="730" y2="88" stroke="#d9f4ff" stroke-width="3"/>
+          <line id="keelLine" x1="100" y1="284" x2="700" y2="284" stroke="#17232c" stroke-width="2" stroke-dasharray="8 7"/>
+          <line id="squatLine" x1="100" y1="310" x2="700" y2="310" stroke="#ffb84d" stroke-width="3" stroke-dasharray="8 7"/>
+          <line id="allowanceLine" x1="100" y1="340" x2="700" y2="340" stroke="#ff6b6b" stroke-width="3" stroke-dasharray="8 7"/>
+          <g font-family="system-ui, sans-serif" font-size="19" fill="#16232b">
+            <text x="26" y="42" font-size="23" font-weight="700">Dynamic UKC cross-section</text>
+            <text id="diagramDepth" x="34" y="115">Total depth</text>
+            <text id="diagramDraft" x="565" y="250">Draft</text>
+            <text id="diagramSquat" x="565" y="307">Squat</text>
+            <text id="diagramAllowances" x="565" y="338">Allowances</text>
+            <text id="diagramUKC" x="565" y="372" font-weight="700">Dynamic UKC</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <section class="panel charts-panel">
+      <div class="panel-head">
+        <div><span class="eyebrow">SENSITIVITY ANALYSIS</span><h2>Speed Curves</h2></div>
+        <div class="chart-controls"><label>Max speed <input id="chartMaxSpeed" type="number" min="5" max="30" value="20" step="1"> kn</label></div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card"><h3>Squat vs speed</h3><canvas id="squatChart"></canvas></div>
+        <div class="chart-card"><h3>Dynamic UKC vs speed</h3><canvas id="ukcChart"></canvas></div>
+      </div>
+    </section>
+
+    <section class="panel table-panel">
+      <div class="panel-head">
+        <div><span class="eyebrow">SQUAT MATRIX</span><h2>Depth × Speed Table</h2></div>
+        <div class="table-legend"><i class="safe"></i> meets UKC requirement <i class="unsafe"></i> below requirement</div>
+      </div>
+      <div class="table-wrap"><table id="squatTable"></table></div>
+    </section>
+
+    <section class="panel scenarios-panel">
+      <div class="panel-head">
+        <div><span class="eyebrow">WHAT-IF ANALYSIS</span><h2>Scenario Comparison</h2></div>
+        <button id="addScenarioBtn" class="primary">Add Current Scenario</button>
+      </div>
+      <div id="scenarioCards" class="scenario-cards"></div>
+    </section>
+
+    <section class="panel formula-panel">
+      <div class="panel-head"><div><span class="eyebrow">TRANSPARENT CALCULATION</span><h2>Formula Trace</h2></div></div>
+      <div id="formulaTrace" class="formula-trace"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>UKC Planner · Client-side calculation · No data upload</span>
+    <span>Not an ECDIS, UKC management system or approved navigational instrument.</span>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="calc-engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
