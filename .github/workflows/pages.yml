@@ -33,10 +33,16 @@ jobs:
           test -f app.js
           grep -q "UKC Planner" index.html
           grep -q "Barrass empirical blockage" index.html
-          grep -qi "speed advisor" index.html
-          grep -q "squatMatrix" calc-engine.js
-          grep -q "maxSafeSpeed" calc-engine.js
-      - name: Run calculation regression tests
+          grep -q "SPEED ADVISOR" index.html
+          grep -q "TIDAL WINDOW PLANNER" index.html
+          grep -q "Charted vertical clearance" index.html
+          grep -q "Bridge / Charted Height" index.html
+          grep -q "bridgeClearance" calc-engine.js
+          grep -q "tideHeightAt" calc-engine.js
+          grep -q "tideWindowSeries" calc-engine.js
+          grep -q "safeWindows" calc-engine.js
+          grep -q "renderTidePlanner" app.js
+      - name: Run UKC / air-clearance / tidal-window regression tests
         run: node tests/calculation.mjs
 
   deploy:
