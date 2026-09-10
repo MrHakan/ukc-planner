@@ -1,6 +1,6 @@
 # UKC Planner
 
-A browser-based Dynamic Under Keel Clearance (UKC), squat and speed-window planning sandbox.
+A browser-based Dynamic Under Keel Clearance (UKC), squat, tidal-window and bridge air-clearance planning sandbox.
 
 **Live:** https://mrhakan.github.io/ukc-planner/
 
@@ -17,74 +17,61 @@ A browser-based Dynamic Under Keel Clearance (UKC), squat and speed-window plann
 - Barrass width-of-influence and sectional blockage calculation
 - Heel/list, wave, survey/CATZOC and other configurable allowances
 - Fixed and percentage-of-draft UKC policy constraints
-- Maximum safe-speed solver under the selected UKC constraints
+- Maximum safe-speed solver under enabled clearance constraints
 - Squat-vs-speed and UKC-vs-speed charts
 - Depth × speed squat matrix with requirement highlighting
 - Scenario comparison, local save/load and printable report
 - Transparent formula trace for every key calculation
 - Responsive GitHub Pages UI; calculations run entirely in the browser
 
+## Bridge / overhead-clearance planner
+
+The bridge module combines charted vertical clearance with a user-defined reference tide level so it does not assume a specific chart datum convention:
+
+```text
+current bridge clearance
+= charted vertical clearance
++ charted-clearance reference tide
+− current tide
+```
+
+The vessel envelope is then evaluated as:
+
+```text
+effective air draft
+= vessel air draft
++ vertical-motion allowance
++ bridge / vertical-survey allowance
+− optional squat credit
+```
+
+The physical gap and operational margin are:
+
+```text
+physical gap = current bridge clearance − effective air draft
+air-clearance margin = physical gap − required air-clearance margin
+```
+
+Squat credit is disabled by default to keep the overhead-clearance calculation conservative.
+
+## Tidal Window Planner
+
+Enter official high-water / low-water prediction events. The planner creates a smooth cosine interpolation between the entered extrema for visualization and what-if analysis, then evaluates every time step against both:
+
+- dynamic UKC requirement
+- enabled bridge air-clearance requirement
+
+It reports combined safe windows, the limiting constraint, worst margin in each window and the speed ceiling at the worst point.
+
+The interpolation is a planning approximation only; official tide predictions remain the authoritative source.
+
 ## Important safety note
 
-This project is an **educational and passage-planning sandbox**, not an ECDIS, approved UKC management system, hydrographic product, or navigational instrument.
+This project is an **educational and passage-planning sandbox**, not an ECDIS, approved UKC management system, hydrographic product, bridge-clearance authority, or navigational instrument.
 
-Do not use it as the sole basis for an operational navigation decision. Verify vessel particulars, drafts, tide, density, bathymetry, CATZOC/survey uncertainty, squat methodology, environmental allowances, company SMS requirements and all safety margins against approved vessel/company procedures and official publications.
+Do not use it as the sole basis for an operational navigation decision. Verify vessel particulars, drafts, air draft, official tide predictions, bathymetry, charted vertical clearance and its datum/reference level, bridge notes, CATZOC/survey uncertainty, squat methodology, environmental allowances, company SMS requirements and all safety margins against approved vessel/company procedures and official publications.
 
 The CATZOC numeric allowances exposed by the UI are reference-style planning allowances and can be replaced/augmented by a manual allowance. CATZOC D and U intentionally do not assume a numeric accuracy value.
-
-## Calculation model
-
-The default empirical model uses:
-
-```text
-Mean draft:
-T = (TF + TA) / 2
-
-Displacement volume:
-∇ = displacement / water density
-
-Block coefficient:
-Cb = ∇ / (LBP × B × T)
-
-Barrass width of influence:
-Wi = B × [7.7 + 20(1 − Cb)²]
-
-Sectional blockage:
-S = (B × T) / (W × H)
-
-Empirical squat:
-squat = Cb × S^0.81 × V^2.08 / 20
-```
-
-If no channel width is supplied, `Wi` is used as the effective width for the blockage estimate.
-
-Two simplified alternatives are also selectable:
-
-```text
-Open water:     squat = Cb × V² / 100
-Confined water: squat = 2 × Cb × V² / 100
-```
-
-Dynamic UKC is then evaluated as:
-
-```text
-total depth
-− adjusted mean draft
-− squat
-− heel/list allowance
-− wave allowance
-− survey/CATZOC allowance
-− other allowance
-```
-
-The required UKC is:
-
-```text
-max(fixed minimum UKC, required % × adjusted draft)
-+ additional company margin
-```
-
-The Speed Advisor solves for the maximum speed at which available dynamic UKC remains greater than or equal to the selected required UKC.
 
 ## Development
 
@@ -99,8 +86,4 @@ tests/calculation.mjs
 .github/workflows/pages.yml
 ```
 
-`calc-engine.js` is independent of the UI and can also be executed under Node for automated tests.
-
-## GitHub Pages
-
-Pushes to `main` run syntax checks and calculation regression tests before deployment.
+`calc-engine.js` is independent of the UI and can also be executed under Node for automated regression tests.
